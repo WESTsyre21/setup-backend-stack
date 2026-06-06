@@ -1,0 +1,103 @@
+{
+  "skill_name": "backend-setup-stack",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need to set up a new backend stack with Express, PostgreSQL, and Prisma. Can you bootstrap it for me?",
+      "expected_output": "Skill triggers. Produces: docker-compose.yml with healthcheck, .env file, prisma/schema.prisma with User model, server.js with /health and / endpoints, and installs correct npm dependencies. Provides migration commands.",
+      "assertions": [
+        {
+          "type": "contains",
+          "text": "docker compose up",
+          "description": "Includes docker compose startup command"
+        },
+        {
+          "type": "contains",
+          "text": "prisma migrate dev",
+          "description": "Includes Prisma migration command"
+        },
+        {
+          "type": "contains",
+          "text": "/health",
+          "description": "Defines the /health endpoint"
+        },
+        {
+          "type": "contains",
+          "text": "DATABASE_URL",
+          "description": "Provides DATABASE_URL env variable"
+        },
+        {
+          "type": "not_contains",
+          "text": "Sequelize",
+          "description": "Does not use Sequelize when Prisma is requested"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Set up a backend stack in my project with Sequelize ORM instead of Prisma.",
+      "expected_output": "Skill triggers. Uses Sequelize (not Prisma). Produces: docker-compose.yml, .env, config/config.js reading from env vars, server.js using sequelize.authenticate() in /health. Runs sequelize-cli db:migrate.",
+      "assertions": [
+        {
+          "type": "contains",
+          "text": "sequelize.authenticate",
+          "description": "Uses sequelize.authenticate() for health check"
+        },
+        {
+          "type": "contains",
+          "text": "sequelize-cli db:migrate",
+          "description": "Runs sequelize-cli migration"
+        },
+        {
+          "type": "not_contains",
+          "text": "PrismaClient",
+          "description": "Does not use Prisma when Sequelize is explicitly requested"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My docker-compose postgres container keeps rejecting connections when I try to run prisma migrate dev. How do I fix it?",
+      "expected_output": "Skill triggers. Diagnoses the connection issue: suggests waiting for pg_isready, verifying .env variable alignment with docker-compose.yml, and testing with psql command. Does not overwrite existing migration metadata.",
+      "assertions": [
+        {
+          "type": "contains",
+          "text": "pg_isready",
+          "description": "Suggests pg_isready for readiness check"
+        },
+        {
+          "type": "contains",
+          "text": "DB_HOST",
+          "description": "References DB_HOST variable alignment"
+        },
+        {
+          "type": "contains",
+          "text": "psql",
+          "description": "Provides psql diagnostic command"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I already have a running Postgres database with _prisma_migrations in it. I want to add Prisma to my existing Express project without losing data.",
+      "expected_output": "Skill triggers. Detects existing _prisma_migrations table. Does NOT run prisma migrate dev --name init. Instead, walks through the baseline migration flow: prisma migrate diff → migration.sql → prisma migrate resolve --applied.",
+      "assertions": [
+        {
+          "type": "not_contains",
+          "text": "migrate dev --name init",
+          "description": "Does not run init migration on existing DB"
+        },
+        {
+          "type": "contains",
+          "text": "migrate resolve",
+          "description": "Uses migrate resolve for baseline"
+        },
+        {
+          "type": "contains",
+          "text": "_prisma_migrations",
+          "description": "Acknowledges existing migration metadata table"
+        }
+      ]
+    }
+  ]
+}

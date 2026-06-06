@@ -1,22 +1,26 @@
+require('dotenv').config();
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 app.get('/health', async (req, res) => {
   try {
-    await prisma.user.findFirst();
-    return res.status(200).json({ status: 'ok' });
-  } catch (error) {
-    return res.status(500).json({ status: 'error', message: error.message });
+    // $queryRaw SELECT 1 works before any model exists — safe for all migration states
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: 'ok' });
+  } catch (err) {
+    console.error('Health check failed:', err);
+    res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Backend server is running.');
+app.get('/', (_req, res) => {
+  res.send('Backend is running.');
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server listening on http://localhost:${PORT}`);
 });
